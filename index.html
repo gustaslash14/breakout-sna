@@ -138,7 +138,7 @@
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-number" id="statKeluar">0</div><div class="stat-label">Sedang di Luar</div></div>
       <div class="stat-card"><div class="stat-number" id="statMasuk">0</div><div class="stat-label">Sudah Kembali</div></div>
-      <div class="stat-card"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Total Transaksi Hari Ini</div></div>
+      <div class="stat-card"><div class="stat-number" id="statTotalKeluar">0</div><div class="stat-label">Total Absen Keluar</div></div>
     </div>
     <div class="dashboard-card">
       <div class="card-title">
@@ -174,7 +174,6 @@
 
 <script>
   const API_KARYAWAN_URL = "https://www.snam110.dpdns.org/absen/api/karyawan";
-  // ✅ URL DEPLOYMENT GOOGLE APPS SCRIPT YANG BARU
   const API_LOG_URL = "https://script.google.com/macros/s/AKfycbxvZFo9oMw6SqP-W6mLiEVt92sHTxwnjPVmao_Jnje6-AbhiAE2qabM5e-YCPr84-1x/exec";
 
   let dbKaryawan = [], html5QrCode = null, isScanning = false, currentFacingMode = "environment";
@@ -362,19 +361,33 @@
 
   function renderTable(data) {
     const tbody = document.getElementById('logTableBody');
-    let keluarCount = 0, masukCount = 0;
+    let keluarCount = 0, masukCount = 0, totalKeluarCount = 0;
     
     if (!data || data.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-inbox"></i><p>Tidak ada data</p></td></tr>';
     } else {
+      // ✅ SORTING BARU: Urutkan berdasarkan Nama (A-Z), lalu chronological dalam setiap nama
       const sortedData = [...data].sort((a, b) => {
+        // Pertama: urutkan berdasarkan nama (alphabetical)
+        const nameA = String(a.nama || '').toUpperCase();
+        const nameB = String(b.nama || '').toUpperCase();
+        const nameCompare = nameA.localeCompare(nameB);
+        
+        if (nameCompare !== 0) return nameCompare;
+        
+        // Jika nama sama, urutkan berdasarkan waktu (chronological)
         const waktuA = a.waktu || a.timestamp || a.time || a.Waktu || a.Timestamp || '';
         const waktuB = b.waktu || b.timestamp || b.time || b.Waktu || b.Timestamp || '';
         return String(waktuA).replace(/:/g, '').localeCompare(String(waktuB).replace(/:/g, ''));
       });
       
       tbody.innerHTML = sortedData.map(row => {
-        if (row.jenis === 'KELUAR') keluarCount++; else masukCount++;
+        if (row.jenis === 'KELUAR') {
+          keluarCount++;
+          totalKeluarCount++;
+        } else {
+          masukCount++;
+        }
         
         const waktu = row.waktu || row.timestamp || row.time || row.Waktu || row.Timestamp || '-';
         const nik = row.nik || row.NIK || '-';
@@ -392,9 +405,10 @@
       }).join('');
     }
     
-    document.getElementById('statTotal').textContent = data ? data.length : 0;
+    // Update stats
     document.getElementById('statKeluar').textContent = keluarCount;
     document.getElementById('statMasuk').textContent = masukCount;
+    document.getElementById('statTotalKeluar').textContent = totalKeluarCount; // Total absen keluar
   }
 
   async function loadAllData() {
@@ -406,7 +420,6 @@
       const result = await response.json();
       if (result.status === "success" && result.data) {
         renderTable(result.data);
-        document.getElementById('statTotal').textContent = result.data.length;
       }
     } catch (error) {
       document.getElementById('logTableBody').innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Gagal memuat data</p></td></tr>';
@@ -437,7 +450,6 @@
         return;
       }
 
-      const totalAbsen = rawData.length;
       const totalKeluar = rawData.filter(d => d.jenis === 'KELUAR').length;
       const totalMasuk = rawData.filter(d => d.jenis === 'MASUK').length;
 
@@ -476,8 +488,14 @@
         
         const sessionsStr = sessions.map(s => `${s.keluar} - ${s.masuk || '-'}`).join('\n');
         const totalJam = totalMenit >= 60 ? `${Math.floor(totalMenit / 60)}j ${totalMenit % 60}m` : `${totalMenit} menit`;
-        tableData.push([person.nik, person.nama, sessionsStr, totalJam]);
+        tableData.push([person.nik, person.nama, sessionsStr, totalJam, totalMenit]);
       });
+
+      // ✅ SORTIR PDF: Total waktu istirahat paling lama di atas
+      tableData.sort((a, b) => b[4] - a[4]); // Sort by totalMenit (descending)
+      
+      // Remove the totalMenit column from display (it was only for sorting)
+      const displayData = tableData.map(row => [row[0], row[1], row[2], row[3]]);
 
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('portrait', 'mm', 'a4');
@@ -493,13 +511,13 @@
       doc.text(`Tanggal: ${tanggal}`, pageWidth / 2, 24, { align: 'center' });
       
       doc.setFontSize(11); doc.setFont('helvetica', 'bold');
-      doc.text(`Total Absen Hari Ini: ${totalAbsen}`, pageWidth / 2, 34, { align: 'center' });
+      doc.text(`Total Absen Keluar: ${totalKeluar}`, pageWidth / 2, 34, { align: 'center' });
       doc.text(`Total Keluar: ${totalKeluar}  |  Total Masuk: ${totalMasuk}`, pageWidth / 2, 41, { align: 'center' });
       
       doc.autoTable({
         startY: 58,
         head: [['NIK', 'Nama', 'Absen Keluar - Masuk', 'Total Waktu']],
-        body: tableData,
+        body: displayData,
         theme: 'grid',
         headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold', fontSize: 10, halign: 'center', cellPadding: 4 },
         bodyStyles: { fontSize: 9, cellPadding: 4, valign: 'middle' },

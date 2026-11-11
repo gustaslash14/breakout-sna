@@ -174,7 +174,8 @@
 
 <script>
   const API_KARYAWAN_URL = "https://www.snam110.dpdns.org/absen/api/karyawan";
-  const API_LOG_URL = "https://script.google.com/macros/s/AKfycbxkyyibXoQt-V--taEP0JfcDst8wQiZDXx4fBrsv9Djgk2cCKTr8EHUDDEdHGlAFngM/exec";
+  // ✅ URL DEPLOYMENT GOOGLE APPS SCRIPT YANG BARU
+  const API_LOG_URL = "https://script.google.com/macros/s/AKfycbxvZFo9oMw6SqP-W6mLiEVt92sHTxwnjPVmao_Jnje6-AbhiAE2qabM5e-YCPr84-1x/exec";
 
   let dbKaryawan = [], html5QrCode = null, isScanning = false, currentFacingMode = "environment";
   let lastDecodedText = null, isProcessing = false, dashboardRefreshInterval = null, isDashboardLoading = false;
@@ -250,7 +251,6 @@
     autoRecord(decodedText);
   }
 
-  // ✅ FRONTEND TIDAK MENENTUKAN JENIS. Backend yang memutuskan berdasarkan kuota harian.
   async function autoRecord(nik) {
     if (isProcessing) return;
     isProcessing = true;
@@ -269,7 +269,6 @@
     const waktu = new Date().toLocaleString('id-ID', { hour12: false }).replace(',', '');
 
     try {
-      // Hanya kirim data identitas. Biarkan backend menghitung status KELUAR/MASUK.
       const url = `${API_LOG_URL}?action=autoRecord&nik=${encodeURIComponent(karyawan.nik)}&nama=${encodeURIComponent(karyawan.nama)}&divisi=${encodeURIComponent(karyawan.divisi)}&waktu=${encodeURIComponent(waktu)}&t=${Date.now()}`;
       const response = await fetch(url);
       const result = await response.json();
@@ -277,7 +276,6 @@
       if (result.status === "success") {
         showSuccessOverlay(result.jenis, karyawan.nama, result.waktu);
       } else {
-        // ✅ Jika backend menolak (Jatah habis), tampilkan error dan JANGAN simpan ke localStorage palsu.
         showToast(`❌ ${result.message}`, "error");
       }
     } catch (error) {
@@ -369,17 +367,27 @@
     if (!data || data.length === 0) {
       tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-inbox"></i><p>Tidak ada data</p></td></tr>';
     } else {
-      // ✅ URUTKAN CHRONOLOGICAL (Terlama ke Terbaru)
-      const sortedData = [...data].sort((a, b) => a.waktu.replace(/:/g, '').localeCompare(b.waktu.replace(/:/g, '')));
+      const sortedData = [...data].sort((a, b) => {
+        const waktuA = a.waktu || a.timestamp || a.time || a.Waktu || a.Timestamp || '';
+        const waktuB = b.waktu || b.timestamp || b.time || b.Waktu || b.Timestamp || '';
+        return String(waktuA).replace(/:/g, '').localeCompare(String(waktuB).replace(/:/g, ''));
+      });
       
       tbody.innerHTML = sortedData.map(row => {
         if (row.jenis === 'KELUAR') keluarCount++; else masukCount++;
+        
+        const waktu = row.waktu || row.timestamp || row.time || row.Waktu || row.Timestamp || '-';
+        const nik = row.nik || row.NIK || '-';
+        const nama = row.nama || row.Nama || '-';
+        const divisi = row.divisi || row.Divisi || '-';
+        const jenis = row.jenis || row.Jenis || '-';
+        
         return `<tr>
-          <td style="font-family: monospace; font-weight: 600;">${row.waktu}</td>
-          <td style="font-weight: 700;">${row.nik}</td>
-          <td>${row.nama}</td>
-          <td>${row.divisi}</td>
-          <td><span class="badge ${row.jenis === 'KELUAR' ? 'badge-keluar' : 'badge-masuk'}">${row.jenis}</span></td>
+          <td style="font-family: monospace; font-weight: 600;">${waktu}</td>
+          <td style="font-weight: 700;">${nik}</td>
+          <td>${nama}</td>
+          <td>${divisi}</td>
+          <td><span class="badge ${jenis === 'KELUAR' ? 'badge-keluar' : 'badge-masuk'}">${jenis}</span></td>
         </tr>`;
       }).join('');
     }
@@ -441,7 +449,7 @@
 
       const tableData = [];
       Object.values(groupedByNIK).forEach(person => {
-        person.activities.sort((a, b) => a.waktu.replace(/:/g, '').localeCompare(b.waktu.replace(/:/g, '')));
+        person.activities.sort((a, b) => String(a.waktu).replace(/:/g, '').localeCompare(String(b.waktu).replace(/:/g, '')));
         let totalMenit = 0, keluarTime = null;
         const sessions = [];
         
@@ -453,11 +461,14 @@
             const lastSession = sessions[sessions.length - 1];
             if (lastSession && !lastSession.masuk) {
               lastSession.masuk = act.waktu;
-              const [h1, m1] = keluarTime.split(':').map(Number);
-              const [h2, m2] = act.waktu.split(':').map(Number);
-              const menit = (h2 * 60 + m2) - (h1 * 60 + m1);
-              lastSession.durasi = menit > 0 ? menit : 0;
-              totalMenit += lastSession.durasi;
+              const timePartsKeluar = keluarTime.split(':').map(Number);
+              const timePartsMasuk = act.waktu.split(':').map(Number);
+              
+              if (timePartsKeluar.length >= 2 && timePartsMasuk.length >= 2) {
+                const menit = (timePartsMasuk[0] * 60 + timePartsMasuk[1]) - (timePartsKeluar[0] * 60 + timePartsKeluar[1]);
+                lastSession.durasi = menit > 0 ? menit : 0;
+                totalMenit += lastSession.durasi;
+              }
             }
             keluarTime = null;
           }
@@ -522,7 +533,6 @@
     if (window.innerWidth >= 769) {
       loadDashboard();
       if (dashboardRefreshInterval) clearInterval(dashboardRefreshInterval);
-      // ✅ AUTO REFRESH SETIAP 45 DETIK
       dashboardRefreshInterval = setInterval(() => { loadDashboard(); }, 45000);
     }
   });

@@ -11,28 +11,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root { 
-    --primary: #dc2626; 
-    --primary-hover: #b91c1c;
-    --primary-light: #fef2f2;
-    --success: #16a34a; 
-    --success-light: #f0fdf4;
-    --bg: #ffffff; 
-    --bg-light: #fef2f2;
-    --card: #ffffff; 
-    --text: #0f172a; 
-    --muted: #64748b;
-    --border: #fecaca;
-    --border-light: #fca5a5;
+    --primary: #dc2626; --primary-hover: #b91c1c; --primary-light: #fef2f2;
+    --success: #16a34a; --success-light: #f0fdf4; --bg: #ffffff; --bg-light: #fef2f2;
+    --card: #ffffff; --text: #0f172a; --muted: #64748b; --border: #fecaca;
   }
-  
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-  
-  body { 
-    background: var(--bg-light); 
-    color: var(--text); 
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+  body { background: var(--bg-light); color: var(--text); min-height: 100vh; overflow-x: hidden; }
 
   .mobile-view { display: none; min-height: 100vh; padding: 20px; position: relative; }
   .mobile-container { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; }
@@ -53,7 +37,6 @@
   .input-group label { display: block; color: var(--muted); font-size: 11px; font-weight: 700; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
   .input-field { width: 100%; padding: 13px; background: var(--bg-light); border: 1.5px solid var(--border); border-radius: 10px; color: var(--text); font-size: 16px; font-weight: 600; outline: none; transition: 0.3s; }
   .input-field:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1); }
-  .input-field::placeholder { color: #cbd5e1; font-weight: 500; }
 
   .btn { width: 100%; padding: 14px; border: none; border-radius: 10px; color: white; font-size: 15px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s; }
   .btn-primary { background: var(--primary); box-shadow: 0 6px 18px rgba(220, 38, 38, 0.25); }
@@ -61,20 +44,9 @@
   .btn-secondary { background: white; color: var(--primary); border: 1.5px solid var(--border); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
   
-  .btn-primary .fa-arrows-rotate,
-  .btn-primary .fa-spinner {
-    color: #ffffff !important;
-  }
-  
-  .btn-primary:disabled .fa-spinner {
-    color: #ffffff !important;
-    animation: fa-spin 1s infinite linear;
-  }
-  
-  @keyframes fa-spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
+  .btn-primary .fa-arrows-rotate, .btn-primary .fa-spinner { color: #ffffff !important; }
+  .btn-primary:disabled .fa-spinner { color: #ffffff !important; animation: fa-spin 1s infinite linear; }
+  @keyframes fa-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
   .info-box { background: var(--primary-light); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 14px; font-size: 12px; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 8px; }
 
@@ -110,51 +82,15 @@
   .toast.success { border-color: var(--success); color: var(--success); }
   .toast.error { border-color: var(--primary); color: var(--primary); }
 
-  #successOverlay { 
-    display: none; 
-    position: fixed; 
-    top: 0; left: 0; 
-    width: 100%; height: 100%; 
-    background: rgba(15, 23, 42, 0.9); 
-    backdrop-filter: blur(8px); 
-    z-index: 99999; 
-    justify-content: center; 
-    align-items: center; 
-    flex-direction: column; 
-    color: white; 
-    animation: fadeIn 0.3s ease; 
-  }
+  #successOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(8px); z-index: 99999; justify-content: center; align-items: center; flex-direction: column; color: white; animation: fadeIn 0.3s ease; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes bounceIn {
-    0% { transform: scale(0.3); opacity: 0; }
-    50% { transform: scale(1.05); }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); opacity: 1; }
-  }
-  .success-icon {
-    font-size: 100px;
-    margin-bottom: 20px;
-    animation: bounceIn 0.5s;
-  }
+  @keyframes bounceIn { 0% { transform: scale(0.3); opacity: 0; } 50% { transform: scale(1.05); } 70% { transform: scale(0.9); } 100% { transform: scale(1); opacity: 1; } }
+  .success-icon { font-size: 100px; margin-bottom: 20px; animation: bounceIn 0.5s; }
   .success-icon.keluar { color: #dc2626; }
   .success-icon.masuk { color: #16a34a; }
-  .success-message {
-    font-size: 28px;
-    font-weight: 800;
-    text-align: center;
-    margin-bottom: 8px;
-  }
-  .success-submessage {
-    font-size: 16px;
-    color: #cbd5e1;
-    text-align: center;
-    margin-bottom: 8px;
-  }
-  .success-time {
-    font-size: 14px;
-    color: #94a3b8;
-    font-family: monospace;
-  }
+  .success-message { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 8px; }
+  .success-submessage { font-size: 16px; color: #cbd5e1; text-align: center; margin-bottom: 8px; }
+  .success-time { font-size: 14px; color: #94a3b8; font-family: monospace; }
 
   @media (max-width: 768px) { .mobile-view { display: block !important; } .desktop-view { display: none !important; } }
   @media (min-width: 769px) { .mobile-view { display: none !important; } .desktop-view { display: block !important; } }
@@ -164,7 +100,6 @@
 </head>
 <body>
 
-<!-- ==================== MOBILE VIEW ==================== -->
 <div class="mobile-view">
   <div class="mobile-container">
     <div class="mobile-header">
@@ -172,63 +107,39 @@
       <h1>Izin Keluar Area</h1>
       <p>Scan QR Code - Auto Keluar/Masuk</p>
     </div>
-
     <div class="mode-switcher">
       <button class="mode-btn active" onclick="switchMode('qr')"><i class="fa-solid fa-qrcode"></i> Scan QR</button>
       <button class="mode-btn" onclick="switchMode('manual')"><i class="fa-solid fa-keyboard"></i> Input NIK</button>
     </div>
-
     <div id="qrMode" class="scan-card">
-      <div class="info-box">
-        <i class="fa-solid fa-bolt"></i>
-        <span><strong>Auto Mode:</strong> Scan QR → Validasi Server → Otomatis Keluar/Masuk</span>
-      </div>
+      <div class="info-box"><i class="fa-solid fa-bolt"></i><span><strong>Auto Mode:</strong> Scan QR → Validasi Server → Otomatis</span></div>
       <div id="qr-reader"></div>
       <div class="scanner-controls">
-        <button class="btn btn-primary" id="btnStartScan" onclick="toggleScanner()">
-          <i class="fa-solid fa-camera"></i> Mulai Scan
-        </button>
-        <button class="btn btn-secondary" id="btnSwitchCam" onclick="switchCamera()" style="display:none;">
-          <i class="fa-solid fa-rotate"></i> Ganti Kamera
-        </button>
+        <button class="btn btn-primary" id="btnStartScan" onclick="toggleScanner()"><i class="fa-solid fa-camera"></i> Mulai Scan</button>
+        <button class="btn btn-secondary" id="btnSwitchCam" onclick="switchCamera()" style="display:none;"><i class="fa-solid fa-rotate"></i> Ganti Kamera</button>
       </div>
     </div>
-
     <div id="manualMode" class="input-card" style="display: none;">
       <div class="input-group">
         <label>NIK Karyawan</label>
         <input type="text" id="nikInput" class="input-field" placeholder="Contoh: 3.26.09.150452" autocomplete="off" onkeypress="if(event.key==='Enter') autoRecordManual()">
       </div>
-      <button class="btn btn-primary" id="btnManualSubmit" onclick="autoRecordManual()">
-        <i class="fa-solid fa-paper-plane"></i> Kirim
-      </button>
+      <button class="btn btn-primary" id="btnManualSubmit" onclick="autoRecordManual()"><i class="fa-solid fa-paper-plane"></i> Kirim</button>
     </div>
   </div>
 </div>
 
-<!-- ==================== DESKTOP VIEW ==================== -->
 <div class="desktop-view">
   <div class="desktop-container">
     <div class="desktop-header">
       <h1><i class="fa-solid fa-door-open"></i> Monitoring Izin Keluar</h1>
       <button class="btn btn-sm btn-primary" onclick="openPdfModal()"><i class="fa-solid fa-file-pdf"></i> Download Laporan PDF</button>
     </div>
-
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number" id="statKeluar">0</div>
-        <div class="stat-label">Sedang di Luar</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" id="statMasuk">0</div>
-        <div class="stat-label">Sudah Kembali</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-number" id="statTotal">0</div>
-        <div class="stat-label">Total Transaksi Hari Ini</div>
-      </div>
+      <div class="stat-card"><div class="stat-number" id="statKeluar">0</div><div class="stat-label">Sedang di Luar</div></div>
+      <div class="stat-card"><div class="stat-number" id="statMasuk">0</div><div class="stat-label">Sudah Kembali</div></div>
+      <div class="stat-card"><div class="stat-number" id="statTotal">0</div><div class="stat-label">Total Transaksi Hari Ini</div></div>
     </div>
-
     <div class="dashboard-card">
       <div class="card-title">
         <span><i class="fa-solid fa-list"></i> Log Harian</span>
@@ -245,18 +156,8 @@
       </div>
       <div class="table-container">
         <table>
-          <thead>
-            <tr>
-              <th>Waktu</th>
-              <th>NIK</th>
-              <th>Nama</th>
-              <th>Divisi</th>
-              <th>Jenis</th>
-            </tr>
-          </thead>
-          <tbody id="logTableBody">
-            <tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat data...</p></td></tr>
-          </tbody>
+          <thead><tr><th>Waktu</th><th>NIK</th><th>Nama</th><th>Divisi</th><th>Jenis</th></tr></thead>
+          <tbody id="logTableBody"><tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat data...</p></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -264,7 +165,6 @@
 </div>
 
 <div id="toast" class="toast"></div>
-
 <div id="successOverlay">
   <i id="successIcon" class="fa-solid fa-circle-check success-icon"></i>
   <h2 id="successMessage" class="success-message">BERHASIL!</h2>
@@ -273,20 +173,11 @@
 </div>
 
 <script>
-  // ==========================================
-  // KONFIGURASI API (URL DEPLOYMENT TERBARU)
-  // ==========================================
   const API_KARYAWAN_URL = "https://www.snam110.dpdns.org/absen/api/karyawan";
-  const API_LOG_URL = "https://script.google.com/macros/s/AKfycbzmQODimBrObVnP1b91nH9azrpbWQPRMF7g0h8zXQ_hPOkXKQZ3k5_HtyCWZ5ftWw/exec";
+  const API_LOG_URL = "https://script.google.com/macros/s/AKfycbxkyyibXoQt-V--taEP0JfcDst8wQiZDXx4fBrsv9Djgk2cCKTr8EHUDDEdHGlAFngM/exec";
 
-  let dbKaryawan = [];
-  let html5QrCode = null;
-  let isScanning = false;
-  let currentFacingMode = "environment";
-  let lastDecodedText = null;
-  let isProcessing = false;
-  let dashboardRefreshInterval = null;
-  let isDashboardLoading = false;
+  let dbKaryawan = [], html5QrCode = null, isScanning = false, currentFacingMode = "environment";
+  let lastDecodedText = null, isProcessing = false, dashboardRefreshInterval = null, isDashboardLoading = false;
 
   function showToast(msg, type = 'error') {
     const t = document.getElementById('toast');
@@ -299,21 +190,10 @@
   function showSuccessOverlay(jenis, nama, waktu) {
     const overlay = document.getElementById('successOverlay');
     const icon = document.getElementById('successIcon');
-    const message = document.getElementById('successMessage');
-    const subMessage = document.getElementById('successSubMessage');
-    const time = document.getElementById('successTime');
-    
-    if (jenis === 'KELUAR') {
-      icon.className = 'fa-solid fa-arrow-right-from-bracket success-icon keluar';
-      message.textContent = '✅ BERHASIL KELUAR';
-    } else {
-      icon.className = 'fa-solid fa-arrow-right-to-bracket success-icon masuk';
-      message.textContent = '✅ BERHASIL MASUK';
-    }
-    
-    subMessage.textContent = nama;
-    time.textContent = `Waktu: ${waktu} WIB`;
-    
+    icon.className = `fa-solid fa-arrow-right-${jenis === 'KELUAR' ? 'from-bracket success-icon keluar' : 'to-bracket success-icon masuk'}`;
+    document.getElementById('successMessage').textContent = `✅ BERHASIL ${jenis}`;
+    document.getElementById('successSubMessage').textContent = nama;
+    document.getElementById('successTime').textContent = `Waktu: ${waktu} WIB`;
     overlay.style.display = 'flex';
     setTimeout(() => { overlay.style.display = 'none'; }, 2000);
   }
@@ -321,54 +201,36 @@
   function switchMode(mode) {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     event.target.closest('.mode-btn').classList.add('active');
-    if (mode === 'qr') {
-      document.getElementById('qrMode').style.display = 'block';
-      document.getElementById('manualMode').style.display = 'none';
-    } else {
-      document.getElementById('qrMode').style.display = 'none';
-      document.getElementById('manualMode').style.display = 'block';
-      stopScanner();
-    }
+    document.getElementById('qrMode').style.display = mode === 'qr' ? 'block' : 'none';
+    document.getElementById('manualMode').style.display = mode === 'manual' ? 'block' : 'none';
+    if (mode === 'manual') stopScanner();
   }
 
-  async function toggleScanner() {
-    if (isScanning) stopScanner();
-    else await startScanner();
-  }
+  async function toggleScanner() { isScanning ? stopScanner() : await startScanner(); }
 
   async function startScanner() {
     const btn = document.getElementById('btnStartScan');
-    const switchBtn = document.getElementById('btnSwitchCam');
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Meminta izin...';
     btn.disabled = true;
-
-    if (html5QrCode) {
-      try { await html5QrCode.clear(); } catch(e) {}
-      html5QrCode = null;
-    }
-
+    if (html5QrCode) { try { await html5QrCode.clear(); } catch(e) {} html5QrCode = null; }
     html5QrCode = new Html5Qrcode("qr-reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 }, formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE] };
-
     try {
-      await html5QrCode.start({ facingMode: currentFacingMode }, config, onScanSuccess, () => {});
+      await html5QrCode.start({ facingMode: currentFacingMode }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess, () => {});
       isScanning = true;
       btn.innerHTML = '<i class="fa-solid fa-stop"></i> Stop Scan';
       btn.disabled = false;
-      switchBtn.style.display = 'flex';
+      document.getElementById('btnSwitchCam').style.display = 'flex';
     } catch (err) {
-      showToast("❌ Gagal akses kamera. Pastikan izin diberikan.", "error");
+      showToast("❌ Gagal akses kamera.", "error");
       btn.innerHTML = '<i class="fa-solid fa-camera"></i> Mulai Scan';
       btn.disabled = false;
-      switchBtn.style.display = 'none';
     }
   }
 
   function stopScanner() {
     if (html5QrCode && isScanning) {
       html5QrCode.stop().then(() => {
-        html5QrCode.clear();
-        isScanning = false;
+        html5QrCode.clear(); isScanning = false;
         document.getElementById('btnStartScan').innerHTML = '<i class="fa-solid fa-camera"></i> Mulai Scan';
         document.getElementById('btnStartScan').disabled = false;
         document.getElementById('btnSwitchCam').style.display = 'none';
@@ -378,10 +240,7 @@
 
   async function switchCamera() {
     currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-    if (isScanning) {
-      await stopScanner();
-      setTimeout(() => startScanner(), 500);
-    }
+    if (isScanning) { await stopScanner(); setTimeout(() => startScanner(), 500); }
   }
 
   function onScanSuccess(decodedText) {
@@ -391,21 +250,17 @@
     autoRecord(decodedText);
   }
 
-  // ✅ FUNGSI INTI: Backend sepenuhnya menentukan KELUAR atau MASUK
+  // ✅ FRONTEND TIDAK MENENTUKAN JENIS. Backend yang memutuskan berdasarkan kuota harian.
   async function autoRecord(nik) {
     if (isProcessing) return;
     isProcessing = true;
     
     const inputNIK = String(nik).trim().toUpperCase();
-    if (!inputNIK) {
-      showToast("❌ NIK tidak valid", "error");
-      isProcessing = false;
-      return;
-    }
+    if (!inputNIK) { showToast("❌ NIK tidak valid", "error"); isProcessing = false; return; }
     
     const karyawan = dbKaryawan.find(k => String(k.nik).trim().toUpperCase() === inputNIK);
     if (!karyawan) {
-      showToast("❌ NIK tidak ditemukan di database karyawan", "error");
+      showToast("❌ NIK tidak ditemukan di database", "error");
       isProcessing = false;
       setTimeout(() => { if (document.getElementById('qrMode').style.display !== 'none') startScanner(); }, 2000);
       return;
@@ -414,7 +269,7 @@
     const waktu = new Date().toLocaleString('id-ID', { hour12: false }).replace(',', '');
 
     try {
-      // Kita tidak mengirim 'jenis'. Backend yang akan menghitung kuota dan menentukan jenisnya.
+      // Hanya kirim data identitas. Biarkan backend menghitung status KELUAR/MASUK.
       const url = `${API_LOG_URL}?action=autoRecord&nik=${encodeURIComponent(karyawan.nik)}&nama=${encodeURIComponent(karyawan.nama)}&divisi=${encodeURIComponent(karyawan.divisi)}&waktu=${encodeURIComponent(waktu)}&t=${Date.now()}`;
       const response = await fetch(url);
       const result = await response.json();
@@ -422,42 +277,33 @@
       if (result.status === "success") {
         showSuccessOverlay(result.jenis, karyawan.nama, result.waktu);
       } else {
-        // ✅ Backend menolak (Misal: "Jatah istirahat Anda sudah habis!")
+        // ✅ Jika backend menolak (Jatah habis), tampilkan error dan JANGAN simpan ke localStorage palsu.
         showToast(`❌ ${result.message}`, "error");
       }
     } catch (error) {
       console.warn("Gagal koneksi ke server:", error);
-      showToast("⚠️ Koneksi server gagal, coba lagi", "error");
+      showToast("⚠️ Koneksi server gagal", "error");
     }
 
     lastDecodedText = null;
     setTimeout(() => {
       isProcessing = false;
-      if (document.getElementById('qrMode').style.display !== 'none') {
-        startScanner();
-      }
+      if (document.getElementById('qrMode').style.display !== 'none') startScanner();
       if (window.innerWidth >= 769) loadDashboard();
     }, 2500);
   }
 
   async function autoRecordManual() {
     const nikInput = document.getElementById('nikInput');
-    const nik = nikInput.value.trim();
-    if (!nik) {
-      showToast("❌ Masukkan NIK terlebih dahulu", "error");
-      nikInput.focus();
-      return;
-    }
-    if (isProcessing) {
-      showToast("⏳ Sedang memproses, tunggu sebentar...", "info");
-      return;
-    }
+    if (!nikInput.value.trim()) { showToast("❌ Masukkan NIK", "error"); nikInput.focus(); return; }
+    if (isProcessing) { showToast("⏳ Sedang memproses...", "info"); return; }
+    
     const btn = document.getElementById('btnManualSubmit');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
     btn.disabled = true;
     
-    await autoRecord(nik);
+    await autoRecord(nikInput.value.trim());
     
     setTimeout(() => {
       nikInput.value = "";
@@ -469,18 +315,13 @@
 
   async function loadKaryawanData() {
     try {
-      showToast("Memuat data karyawan...", "info");
       const response = await fetch(API_KARYAWAN_URL);
       const result = await response.json();
       if (result.status === true && Array.isArray(result.data)) {
         dbKaryawan = result.data;
-        console.log(`✅ Berhasil memuat ${dbKaryawan.length} data karyawan.`);
-        showToast("✅ Data karyawan berhasil dimuat", "success");
-      } else {
-        throw new Error("Format data tidak sesuai");
+        showToast("✅ Data karyawan dimuat", "success");
       }
     } catch (error) {
-      console.error("❌ Gagal memuat data karyawan:", error);
       showToast("❌ Gagal terhubung ke API Karyawan", "error");
     }
   }
@@ -490,57 +331,46 @@
     isDashboardLoading = true;
     
     const btnRefresh = document.getElementById('btnRefresh');
-    const refreshIcon = document.getElementById('refreshIcon');
-    const refreshText = document.getElementById('refreshText');
-    
     if (btnRefresh) {
       btnRefresh.disabled = true;
-      refreshIcon.className = 'fa-solid fa-spinner fa-spin';
-      refreshText.textContent = 'Loading...';
+      document.getElementById('refreshIcon').className = 'fa-solid fa-spinner fa-spin';
+      document.getElementById('refreshText').textContent = 'Loading...';
     }
     
     const dateInput = document.getElementById('filterDate');
     if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
-    const targetDate = dateInput.value;
     
-    const tbody = document.getElementById('logTableBody');
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat data...</p></td></tr>';
+    document.getElementById('logTableBody').innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat data...</p></td></tr>';
 
     try {
-      const response = await fetch(`${API_LOG_URL}?action=laporan&tanggal=${targetDate}&t=${Date.now()}`);
+      const response = await fetch(`${API_LOG_URL}?action=laporan&tanggal=${dateInput.value}&t=${Date.now()}`);
       const result = await response.json();
-
       if (result.status === "success" && result.data) {
-        renderTable(result.data, targetDate);
+        renderTable(result.data);
       } else {
-        throw new Error("Data dari server tidak lengkap");
+        throw new Error("Data tidak lengkap");
       }
     } catch (error) {
-      console.warn("Gagal load dari server:", error);
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Gagal memuat data dari server</p></td></tr>';
+      document.getElementById('logTableBody').innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Gagal memuat data</p></td></tr>';
     } finally {
       isDashboardLoading = false;
       if (btnRefresh) {
         btnRefresh.disabled = false;
-        refreshIcon.className = 'fa-solid fa-arrows-rotate';
-        refreshText.textContent = 'Refresh';
+        document.getElementById('refreshIcon').className = 'fa-solid fa-arrows-rotate';
+        document.getElementById('refreshText').textContent = 'Refresh';
       }
     }
   }
 
-  function renderTable(data, targetDate) {
+  function renderTable(data) {
     const tbody = document.getElementById('logTableBody');
     let keluarCount = 0, masukCount = 0;
     
     if (!data || data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-inbox"></i><p>Tidak ada data untuk tanggal ini</p></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-inbox"></i><p>Tidak ada data</p></td></tr>';
     } else {
-      // ✅ URUTKAN CHRONOLOGICAL (Terlama ke Terbaru) agar KELUAR muncul sebelum MASUK
-      const sortedData = [...data].sort((a, b) => {
-        const timeA = a.waktu.replace(/:/g, '');
-        const timeB = b.waktu.replace(/:/g, '');
-        return timeA.localeCompare(timeB);
-      });
+      // ✅ URUTKAN CHRONOLOGICAL (Terlama ke Terbaru)
+      const sortedData = [...data].sort((a, b) => a.waktu.replace(/:/g, '').localeCompare(b.waktu.replace(/:/g, '')));
       
       tbody.innerHTML = sortedData.map(row => {
         if (row.jenis === 'KELUAR') keluarCount++; else masukCount++;
@@ -562,23 +392,17 @@
   async function loadAllData() {
     if (isDashboardLoading) return;
     isDashboardLoading = true;
-    const tbody = document.getElementById('logTableBody');
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat semua data...</p></td></tr>';
-
+    document.getElementById('logTableBody').innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat semua data...</p></td></tr>';
     try {
       const response = await fetch(`${API_LOG_URL}?action=allData&t=${Date.now()}`);
       const result = await response.json();
       if (result.status === "success" && result.data) {
-        renderTable(result.data, 'Semua');
+        renderTable(result.data);
         document.getElementById('statTotal').textContent = result.data.length;
-      } else {
-        throw new Error("Data tidak lengkap");
       }
     } catch (error) {
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Gagal memuat data</p></td></tr>';
-    } finally {
-      isDashboardLoading = false;
-    }
+      document.getElementById('logTableBody').innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Gagal memuat data</p></td></tr>';
+    } finally { isDashboardLoading = false; }
   }
 
   function openPdfModal() {
@@ -592,15 +416,12 @@
     if (btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...'; btn.disabled = true; }
 
     try {
-      // 1. Ambil data mentah untuk statistik header yang akurat
       let rawData = [];
       try {
         const res = await fetch(`${API_LOG_URL}?action=laporan&tanggal=${tanggal}&t=${Date.now()}`);
         const result = await res.json();
         if (result.status === "success") rawData = result.data;
-      } catch(e) {
-        console.error("Gagal fetch data PDF", e);
-      }
+      } catch(e) { console.error("Gagal fetch data PDF", e); }
       
       if (!rawData || rawData.length === 0) {
         showToast("❌ Tidak ada data untuk tanggal ini", "error"); 
@@ -612,26 +433,16 @@
       const totalKeluar = rawData.filter(d => d.jenis === 'KELUAR').length;
       const totalMasuk = rawData.filter(d => d.jenis === 'MASUK').length;
 
-      // 2. Group data untuk tabel durasi
       const groupedByNIK = {};
       rawData.forEach(record => {
-        const nik = record.nik;
-        if (!groupedByNIK[nik]) {
-          groupedByNIK[nik] = { nik: nik, nama: record.nama, divisi: record.divisi, activities: [] };
-        }
-        groupedByNIK[nik].activities.push(record);
+        if (!groupedByNIK[record.nik]) groupedByNIK[record.nik] = { nik: record.nik, nama: record.nama, divisi: record.divisi, activities: [] };
+        groupedByNIK[record.nik].activities.push(record);
       });
 
       const tableData = [];
       Object.values(groupedByNIK).forEach(person => {
-        person.activities.sort((a, b) => {
-          const timeA = a.waktu.replace(/:/g, '');
-          const timeB = b.waktu.replace(/:/g, '');
-          return timeA.localeCompare(timeB);
-        });
-        
-        let totalMenit = 0;
-        let keluarTime = null;
+        person.activities.sort((a, b) => a.waktu.replace(/:/g, '').localeCompare(b.waktu.replace(/:/g, '')));
+        let totalMenit = 0, keluarTime = null;
         const sessions = [];
         
         person.activities.forEach(act => {
@@ -654,11 +465,9 @@
         
         const sessionsStr = sessions.map(s => `${s.keluar} - ${s.masuk || '-'}`).join('\n');
         const totalJam = totalMenit >= 60 ? `${Math.floor(totalMenit / 60)}j ${totalMenit % 60}m` : `${totalMenit} menit`;
-        
         tableData.push([person.nik, person.nama, sessionsStr, totalJam]);
       });
 
-      // 3. Generate PDF
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('portrait', 'mm', 'a4');
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -667,15 +476,12 @@
       doc.rect(0, 0, pageWidth, 50, 'F');
       
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20); doc.setFont('helvetica', 'bold');
       doc.text('LAPORAN IZIN KELUAR HARIAN', pageWidth / 2, 15, { align: 'center' });
-      doc.setFontSize(13);
-      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(13); doc.setFont('helvetica', 'normal');
       doc.text(`Tanggal: ${tanggal}`, pageWidth / 2, 24, { align: 'center' });
       
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11); doc.setFont('helvetica', 'bold');
       doc.text(`Total Absen Hari Ini: ${totalAbsen}`, pageWidth / 2, 34, { align: 'center' });
       doc.text(`Total Keluar: ${totalKeluar}  |  Total Masuk: ${totalMasuk}`, pageWidth / 2, 41, { align: 'center' });
       
@@ -686,19 +492,13 @@
         theme: 'grid',
         headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold', fontSize: 10, halign: 'center', cellPadding: 4 },
         bodyStyles: { fontSize: 9, cellPadding: 4, valign: 'middle' },
-        columnStyles: {
-          0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' },
-          1: { cellWidth: 50, halign: 'left' },
-          2: { cellWidth: 65, halign: 'left' },
-          3: { cellWidth: 35, halign: 'center' }
-        },
+        columnStyles: { 0: { cellWidth: 30, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 50, halign: 'left' }, 2: { cellWidth: 65, halign: 'left' }, 3: { cellWidth: 35, halign: 'center' } },
         alternateRowStyles: { fillColor: [254, 242, 242] },
         margin: { left: 10, right: 10 }
       });
       
       const finalY = doc.lastAutoTable.finalY + 10;
-      doc.setFontSize(9);
-      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(9); doc.setTextColor(100, 116, 139);
       doc.text('SNA Medika - Healthcare Product Solution', pageWidth / 2, finalY, { align: 'center' });
       doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, pageWidth / 2, finalY + 5, { align: 'center' });
       

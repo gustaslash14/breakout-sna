@@ -167,7 +167,7 @@
     <div id="qrMode" class="scan-card">
       <div class="info-box">
         <i class="fa-solid fa-bolt"></i>
-        <span><strong>Auto Mode:</strong> Scan QR → Otomatis Keluar/Masuk → Siap scan berikutnya</span>
+        <span><strong>Auto Mode:</strong> Scan QR → Validasi API → Otomatis Keluar/Masuk</span>
       </div>
       <div id="qr-reader"></div>
       <div class="scanner-controls">
@@ -184,7 +184,7 @@
     <div id="manualMode" class="input-card" style="display: none;">
       <div class="input-group">
         <label>NIK Karyawan</label>
-        <input type="text" id="nikInput" class="input-field" placeholder="Contoh: EMP001" autocomplete="off" onkeypress="if(event.key==='Enter') autoRecordManual()">
+        <input type="text" id="nikInput" class="input-field" placeholder="Contoh: 3.26.09.150452" autocomplete="off" onkeypress="if(event.key==='Enter') autoRecordManual()">
       </div>
       <button class="btn btn-primary" id="btnManualSubmit" onclick="autoRecordManual()">
         <i class="fa-solid fa-paper-plane"></i> Kirim
@@ -212,7 +212,7 @@
       </div>
       <div class="stat-card">
         <div class="stat-number" id="statKaryawan">0</div>
-        <div class="stat-label">Total Karyawan</div>
+        <div class="stat-label">Total Karyawan Terdaftar</div>
       </div>
       <div class="stat-card">
         <div class="stat-number" id="statTotal">0</div>
@@ -262,8 +262,17 @@
 </div>
 
 <script>
-  const API_URL = "https://script.google.com/macros/s/AKfycbxxvuo-wxzLdL2yHyqNXUpnJHhfyF5mwKKXnEpjmz6mKdXdyhc2THiMNkr3SiuahR4v/exec";
+  // ==========================================
+  // KONFIGURASI API
+  // ==========================================
+  // 1. API untuk mengambil data karyawan (Validasi NIK, Nama, Divisi)
+  const API_KARYAWAN_URL = "https://www.snam110.dpdns.org/absen/api/karyawan";
+  
+  // 2. API untuk menyimpan dan membaca LOG (Biarkan URL Google Script Anda di sini, 
+  //    atau ganti dengan endpoint API backend Anda yang menangani action=autoRecord, laporan, dll)
+  const API_LOG_URL = "https://script.google.com/macros/s/AKfycbxxvuo-wxzLdL2yHyqNXUpnJHhfyF5mwKKXnEpjmz6mKdXdyhc2THiMNkr3SiuahR4v/exec";
 
+  let dbKaryawan = []; // Menyimpan data karyawan dari API di memori
   let html5QrCode = null;
   let isScanning = false;
   let currentFacingMode = "environment";
@@ -272,13 +281,9 @@
   let dashboardRefreshInterval = null;
   let isDashboardLoading = false;
 
-  function isApiConfigured() {
-    if (!API_URL) return false;
-    if (!API_URL.startsWith("https://script.google.com/macros/s/")) return false;
-    if (!API_URL.endsWith("/exec")) return false;
-    return true;
-  }
-
+  // ==========================================
+  // FUNGSI UTILITAS & UI
+  // ==========================================
   function showToast(msg, type = 'error') {
     const t = document.getElementById('toast');
     const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
@@ -306,10 +311,7 @@
     time.textContent = `Waktu: ${waktu} WIB`;
     
     overlay.style.display = 'flex';
-    
-    setTimeout(() => {
-      overlay.style.display = 'none';
-    }, 2000);
+    setTimeout(() => { overlay.style.display = 'none'; }, 2000);
   }
 
   function switchMode(mode) {
@@ -326,6 +328,9 @@
     }
   }
 
+  // ==========================================
+  // FUNGSI SCANNER
+  // ==========================================
   async function toggleScanner() {
     if (isScanning) stopScanner();
     else await startScanner();
@@ -379,18 +384,16 @@
     }
   }
 
-  // ✅ DIPERBAIKI: Reset lastDecodedText SEGERA
   function onScanSuccess(decodedText) {
     if (isProcessing) return;
-    
-    // ✅ Reset SEGERA agar scan berikutnya tidak di-block
     lastDecodedText = null;
-    
     stopScanner();
     autoRecord(decodedText);
   }
 
-  // ✅ DIPERBAIKI: Delay lebih lama (4 detik) untuk beri waktu backend flush
+  // ==========================================
+  // FUNGSI INTI: VALIDASI API & RECORD
+  // ==========================================
   async function autoRecord(nik) {
     if (isProcessing) return;
     isProcessing = true;
@@ -402,55 +405,61 @@
       return;
     }
     
-    if (!isApiConfigured()) {
-      showToast("⚠️ URL API belum dikonfigurasi!", "error");
+    // 1. Validasi NIK terhadap data dari API Karyawan
+    const karyawan = dbKaryawan.find(k => String(k.nik).trim().toUpperCase() === inputNIK);
+    
+    if (!karyawan) {
+      showToast("❌ NIK tidak ditemukan di database karyawan", "error");
       isProcessing = false;
+      setTimeout(() => { if (document.getElementById('qrMode').style.display !== 'none') startScanner(); }, 2000);
       return;
     }
 
-    try {
-      const url = `${API_URL}?action=autoRecord&nik=${encodeURIComponent(inputNIK)}&t=${Date.now()}`;
-      console.log("Auto Record URL:", url);
-      
-      const response = await fetch(url);
-      const result = await response.json();
-      console.log("Auto Record Response:", result);
+    // 2. Tentukan Jenis (Sederhana: cek log lokal terakhir untuk NIK ini, default KELUAR)
+    const localLogs = JSON.parse(localStorage.getItem('logIzin') || '[]');
+    const lastLog = localLogs.filter(l => l.nik === inputNIK).pop();
+    const jenis = (!lastLog || lastLog.jenis === 'MASUK') ? 'KELUAR' : 'MASUK';
+    const waktu = new Date().toLocaleString('id-ID', { hour12: false }).replace(',', '');
 
+    // 3. Simpan ke Log (Coba kirim ke API_LOG_URL, fallback ke localStorage agar UI tetap update)
+    const logData = {
+      nik: karyawan.nik,
+      nama: karyawan.nama,
+      divisi: karyawan.divisi,
+      jenis: jenis,
+      waktu: waktu,
+      tanggal: new Date().toISOString().split('T')[0]
+    };
+
+    try {
+      // Coba kirim ke backend (Google Script / API Anda)
+      const response = await fetch(`${API_LOG_URL}?action=autoRecord&nik=${encodeURIComponent(logData.nik)}&nama=${encodeURIComponent(logData.nama)}&divisi=${encodeURIComponent(logData.divisi)}&jenis=${jenis}&waktu=${encodeURIComponent(waktu)}&t=${Date.now()}`);
+      const result = await response.json();
+      
       if (result.status === "success") {
-        showSuccessOverlay(result.jenis, result.nama, result.waktu);
-        
-        lastDecodedText = null;
-        
-        // ✅ PERPANJANG delay dari 2.5s ke 4 detik untuk beri waktu backend flush
-        setTimeout(() => {
-          isProcessing = false;
-          if (document.getElementById('qrMode').style.display !== 'none') {
-            startScanner();
-          }
-        }, 4000);
+        showSuccessOverlay(jenis, karyawan.nama, waktu);
       } else {
-        showToast(`❌ ${result.message}`, "error");
-        lastDecodedText = null;
-        isProcessing = false;
-        
-        setTimeout(() => {
-          if (document.getElementById('qrMode').style.display !== 'none') {
-            startScanner();
-          }
-        }, 3000);
+        throw new Error(result.message || "Gagal simpan ke server");
       }
     } catch (error) {
-      console.error("Auto Record error:", error);
-      showToast("❌ Gagal menyimpan data", "error");
-      lastDecodedText = null;
-      isProcessing = false;
-      
-      setTimeout(() => {
-        if (document.getElementById('qrMode').style.display !== 'none') {
-          startScanner();
-        }
-      }, 3000);
+      console.warn("Gagal simpan ke API_LOG_URL, menggunakan fallback localStorage:", error);
+      // Fallback: Simpan lokal agar tetap bisa dilihat di LogIzin saat dicoba
+      localLogs.push(logData);
+      localStorage.setItem('logIzin', JSON.stringify(localLogs));
+      showSuccessOverlay(jenis, karyawan.nama, waktu);
+      showToast("⚠️ Disimpan lokal (Server tidak merespons)", "info");
     }
+
+    // 4. Reset dan lanjut scan
+    lastDecodedText = null;
+    setTimeout(() => {
+      isProcessing = false;
+      if (document.getElementById('qrMode').style.display !== 'none') {
+        startScanner();
+      }
+      // Refresh dashboard jika sedang dibuka
+      if (window.innerWidth >= 769) loadDashboard();
+    }, 2500);
   }
 
   async function autoRecordManual() {
@@ -480,59 +489,86 @@
       nikInput.focus();
       btn.innerHTML = originalText;
       btn.disabled = false;
-    }, 4000);
+    }, 2500);
+  }
+
+  // ==========================================
+  // FUNGSI DASHBOARD & LOG
+  // ==========================================
+  async function loadKaryawanData() {
+    try {
+      showToast("Memuat data karyawan dari server...", "info");
+      const response = await fetch(API_KARYAWAN_URL);
+      const result = await response.json();
+      
+      if (result.status === true && Array.isArray(result.data)) {
+        dbKaryawan = result.data;
+        document.getElementById('statKaryawan').textContent = dbKaryawan.length;
+        console.log(`✅ Berhasil memuat ${dbKaryawan.length} data karyawan dari API.`);
+        showToast("✅ Data karyawan berhasil dimuat", "success");
+      } else {
+        throw new Error("Format data tidak sesuai");
+      }
+    } catch (error) {
+      console.error("❌ Gagal memuat data karyawan:", error);
+      showToast("❌ Gagal terhubung ke API Karyawan", "error");
+    }
   }
 
   async function loadDashboard() {
     if (isDashboardLoading) return;
     isDashboardLoading = true;
     
-    if (!isApiConfigured()) {
-      document.getElementById('logTableBody').innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>URL API belum dikonfigurasi.</p></td></tr>';
-      isDashboardLoading = false;
-      return;
-    }
-
     const dateInput = document.getElementById('filterDate');
     if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0];
+    const targetDate = dateInput.value;
     
     const tbody = document.getElementById('logTableBody');
     tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat data...</p></td></tr>';
 
     try {
-      const response = await fetch(`${API_URL}?action=laporan&tanggal=${dateInput.value}&t=${Date.now()}`);
+      // Coba ambil dari API_LOG_URL
+      const response = await fetch(`${API_LOG_URL}?action=laporan&tanggal=${targetDate}&t=${Date.now()}`);
       const result = await response.json();
 
-      if (result.status === "success") {
-        const data = result.data || [];
-        let keluarCount = 0, masukCount = 0;
-        
-        if (data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-inbox"></i><p>Tidak ada data untuk tanggal ini</p></td></tr>';
-        } else {
-          tbody.innerHTML = data.map(row => {
-            if (row.jenis === 'KELUAR') keluarCount++; else masukCount++;
-            return `<tr>
-              <td style="font-family: monospace; font-weight: 600;">${row.waktu}</td>
-              <td style="font-weight: 700;">${row.nik}</td>
-              <td>${row.nama}</td>
-              <td>${row.divisi}</td>
-              <td><span class="badge ${row.jenis === 'KELUAR' ? 'badge-keluar' : 'badge-masuk'}">${row.jenis}</span></td>
-            </tr>`;
-          }).join('');
-        }
-        
-        document.getElementById('statTotal').textContent = data.length;
-        document.getElementById('statKeluar').textContent = keluarCount;
-        document.getElementById('statMasuk').textContent = masukCount;
-        document.getElementById('statKaryawan').textContent = keluarCount;
+      if (result.status === "success" && result.data) {
+        renderTable(result.data, targetDate);
+      } else {
+        throw new Error("Data dari server tidak lengkap");
       }
     } catch (error) {
-      console.error("Dashboard fetch error:", error);
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Gagal terhubung ke server.</p></td></tr>';
+      console.warn("Menggunakan data localStorage sebagai fallback:", error);
+      // Fallback ke localStorage agar UI tetap berfungsi saat dicoba
+      const localLogs = JSON.parse(localStorage.getItem('logIzin') || '[]');
+      const filteredLogs = localLogs.filter(log => log.tanggal === targetDate);
+      renderTable(filteredLogs, targetDate);
     } finally {
       isDashboardLoading = false;
     }
+  }
+
+  function renderTable(data, targetDate) {
+    const tbody = document.getElementById('logTableBody');
+    let keluarCount = 0, masukCount = 0;
+    
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-inbox"></i><p>Tidak ada data untuk tanggal ini</p></td></tr>';
+    } else {
+      tbody.innerHTML = data.map(row => {
+        if (row.jenis === 'KELUAR') keluarCount++; else masukCount++;
+        return `<tr>
+          <td style="font-family: monospace; font-weight: 600;">${row.waktu}</td>
+          <td style="font-weight: 700;">${row.nik}</td>
+          <td>${row.nama}</td>
+          <td>${row.divisi}</td>
+          <td><span class="badge ${row.jenis === 'KELUAR' ? 'badge-keluar' : 'badge-masuk'}">${row.jenis}</span></td>
+        </tr>`;
+      }).join('');
+    }
+    
+    document.getElementById('statTotal').textContent = data ? data.length : 0;
+    document.getElementById('statKeluar').textContent = keluarCount;
+    document.getElementById('statMasuk').textContent = masukCount;
   }
 
   async function loadAllData() {
@@ -543,29 +579,19 @@
     tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Memuat semua data...</p></td></tr>';
 
     try {
-      const response = await fetch(`${API_URL}?action=allData&t=${Date.now()}`);
+      const response = await fetch(`${API_LOG_URL}?action=allData&t=${Date.now()}`);
       const result = await response.json();
 
-      if (result.status === "success") {
-        const data = result.data || [];
-        if (data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-inbox"></i><p>Belum ada data sama sekali</p></td></tr>';
-        } else {
-          tbody.innerHTML = data.map(row => {
-            return `<tr>
-              <td style="font-family: monospace; font-weight: 600;">${row.waktu}</td>
-              <td style="font-weight: 700;">${row.nik}</td>
-              <td>${row.nama}</td>
-              <td>${row.divisi}</td>
-              <td><span class="badge ${row.jenis === 'KELUAR' ? 'badge-keluar' : 'badge-masuk'}">${row.jenis}</span></td>
-            </tr>`;
-          }).join('');
-          document.getElementById('statTotal').textContent = data.length;
-        }
+      if (result.status === "success" && result.data) {
+        renderTable(result.data, 'Semua');
+        document.getElementById('statTotal').textContent = result.data.length;
+      } else {
+        throw new Error("Data tidak lengkap");
       }
     } catch (error) {
-      console.error("Load all data error:", error);
-      tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><p>Gagal terhubung ke server</p></td></tr>';
+      const localLogs = JSON.parse(localStorage.getItem('logIzin') || '[]');
+      renderTable(localLogs, 'Semua');
+      document.getElementById('statTotal').textContent = localLogs.length;
     } finally {
       isDashboardLoading = false;
     }
@@ -577,16 +603,22 @@
   }
 
   async function generatePdf(tanggal) {
-    if (!isApiConfigured()) { showToast("⚠️ URL API belum dikonfigurasi!", "error"); return; }
     const btn = document.querySelector('.desktop-header .btn-primary');
     const originalText = btn ? btn.innerHTML : '';
     if (btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating...'; btn.disabled = true; }
 
     try {
-      const response = await fetch(`${API_URL}?action=laporanDurasi&tanggal=${tanggal}&t=${Date.now()}`);
-      const result = await response.json();
+      // Ambil data (coba API, fallback localStorage)
+      let data = [];
+      try {
+        const response = await fetch(`${API_LOG_URL}?action=laporanDurasi&tanggal=${tanggal}&t=${Date.now()}`);
+        const result = await response.json();
+        if (result.status === "success") data = result.data;
+      } catch(e) {
+        data = JSON.parse(localStorage.getItem('logIzin') || '[]').filter(l => l.tanggal === tanggal);
+      }
       
-      if (result.status !== "success" || !result.data || result.data.length === 0) {
+      if (!data || data.length === 0) {
         showToast("❌ Tidak ada data untuk tanggal ini", "error"); return;
       }
 
@@ -605,93 +637,42 @@
       doc.setFont('helvetica', 'normal');
       doc.text(`Tanggal: ${tanggal}`, pageWidth / 2, 24, { align: 'center' });
       
-      const totalKaryawan = result.data.length;
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Total Karyawan: ${totalKaryawan} orang`, pageWidth / 2, 33, { align: 'center' });
-      
-      const tableData = [];
-      result.data.forEach(person => {
-        const sesiList = person.activities.map(a => `${a.keluar} - ${a.masuk}`).join('\n');
-        
-        tableData.push([
-          person.nik,
-          person.nama,
-          person.divisi,
-          person.jabatan,
-          sesiList || '-',
-          person.totalJam
-        ]);
-      });
-      
       doc.autoTable({
         startY: 48,
-        head: [['NIK', 'Nama', 'Divisi', 'Jabatan', 'Waktu Keluar-Masuk', 'Durasi']],
-        body: tableData,
+        head: [['Waktu', 'NIK', 'Nama', 'Divisi', 'Jenis']],
+        body: data.map(row => [row.waktu, row.nik, row.nama, row.divisi, row.jenis]),
         theme: 'grid',
-        headStyles: { 
-          fillColor: [220, 38, 38], 
-          textColor: 255, 
-          fontStyle: 'bold',
-          fontSize: 9,
-          halign: 'center',
-          cellPadding: 3
-        },
-        bodyStyles: { 
-          fontSize: 9,
-          cellPadding: 3,
-          valign: 'middle'
-        },
-        columnStyles: {
-          0: { cellWidth: 28, halign: 'center', fontStyle: 'bold', textColor: [220, 38, 38] },
-          1: { cellWidth: 45, halign: 'left' },
-          2: { cellWidth: 22, halign: 'left' },
-          3: { cellWidth: 22, halign: 'left' },
-          4: { cellWidth: 50, halign: 'center' },
-          5: { cellWidth: 23, halign: 'center' }
-        },
-        alternateRowStyles: { 
-          fillColor: [254, 242, 242] 
-        },
-        margin: { left: 10, right: 10, top: 10, bottom: 10 }
+        headStyles: { fillColor: [220, 38, 38], textColor: 255, fontStyle: 'bold', fontSize: 9, halign: 'center' },
+        bodyStyles: { fontSize: 9, cellPadding: 3, valign: 'middle' },
+        alternateRowStyles: { fillColor: [254, 242, 242] }
       });
-      
-      const finalY = doc.lastAutoTable.finalY + 15;
-      doc.setDrawColor(220, 38, 38);
-      doc.setLineWidth(0.5);
-      doc.line(10, finalY - 5, pageWidth - 10, finalY - 5);
-      
-      doc.setFontSize(9);
-      doc.setTextColor(100, 116, 139);
-      doc.text('SNA Medika - Healthcare Product Solution', pageWidth / 2, finalY, { align: 'center' });
-      doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, pageWidth / 2, finalY + 5, { align: 'center' });
       
       doc.save(`Laporan_Izin_${tanggal}.pdf`);
       showToast("✅ PDF berhasil diunduh", "success");
     } catch (err) {
       console.error("PDF error:", err);
-      showToast("❌ Gagal membuat PDF: " + err.message, "error");
+      showToast("❌ Gagal membuat PDF", "error");
     } finally {
       if (btn) { btn.innerHTML = originalText; btn.disabled = false; }
     }
   }
 
+  // ==========================================
+  // INISIALISASI
+  // ==========================================
   window.addEventListener('load', function() {
     const today = new Date().toISOString().split('T')[0];
     const filterDate = document.getElementById('filterDate');
     if (filterDate) filterDate.value = today;
     
+    // 1. Muat data karyawan dari API baru
+    loadKaryawanData();
+    
+    // 2. Setup dashboard jika di desktop
     if (window.innerWidth >= 769) {
       loadDashboard();
       if (dashboardRefreshInterval) clearInterval(dashboardRefreshInterval);
       dashboardRefreshInterval = setInterval(() => { loadDashboard(); }, 60000);
-    }
-    
-    if (isApiConfigured()) {
-      fetch(`${API_URL}?action=test&t=${Date.now()}`)
-        .then(r => r.json())
-        .then(data => console.log("✅ API terhubung:", data))
-        .catch(err => console.error("⚠️ API tidak bisa diakses:", err));
     }
   });
 

@@ -187,7 +187,7 @@
     setTimeout(() => t.classList.remove('show'), 3500);
   }
 
-  // ✅ PERUBAHAN 1: Durasi overlay notifikasi diubah menjadi 1500ms (1.5 detik)
+  // ✅ PERUBAHAN 1: Durasi overlay notifikasi diubah menjadi 1000ms (1 detik) agar lebih cepat
   function showSuccessOverlay(jenis, nama, waktu) {
     const overlay = document.getElementById('successOverlay');
     const icon = document.getElementById('successIcon');
@@ -196,7 +196,7 @@
     document.getElementById('successSubMessage').textContent = nama;
     document.getElementById('successTime').textContent = `Waktu: ${waktu} WIB`;
     overlay.style.display = 'flex';
-    setTimeout(() => { overlay.style.display = 'none'; }, 1500); 
+    setTimeout(() => { overlay.style.display = 'none'; }, 1000); 
   }
 
   function switchMode(mode) {
@@ -262,7 +262,8 @@
     if (!karyawan) {
       showToast("❌ NIK tidak ditemukan di database", "error");
       isProcessing = false;
-      setTimeout(() => { if (document.getElementById('qrMode').style.display !== 'none') startScanner(); }, 1500);
+      // ✅ PERUBAHAN 2: Retry scanner lebih cepat (1 detik)
+      setTimeout(() => { if (document.getElementById('qrMode').style.display !== 'none') startScanner(); }, 1000);
       return;
     }
 
@@ -284,12 +285,12 @@
     }
 
     lastDecodedText = null;
-    // ✅ PERUBAHAN 2: Waktu tunggu sebelum kamera nyala kembali diubah menjadi 1500ms (1.5 detik)
+    // ✅ PERUBAHAN 3: Reset status dan nyalakan kamera kembali dalam 1 detik (1000ms)
     setTimeout(() => {
       isProcessing = false;
       if (document.getElementById('qrMode').style.display !== 'none') startScanner();
       if (window.innerWidth >= 769) loadDashboard();
-    }, 1500);
+    }, 1000);
   }
 
   async function autoRecordManual() {
@@ -304,13 +305,13 @@
     
     await autoRecord(nikInput.value.trim());
     
-    // ✅ PERUBAHAN 3: Konsistensi waktu reset form manual juga diubah ke 1500ms
+    // ✅ PERUBAHAN 4: Reset form manual juga dipercepat ke 1 detik
     setTimeout(() => {
       nikInput.value = "";
       nikInput.focus();
       btn.innerHTML = originalText;
       btn.disabled = false;
-    }, 1500);
+    }, 1000);
   }
 
   async function loadKaryawanData() {

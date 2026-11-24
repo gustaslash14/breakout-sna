@@ -31,6 +31,12 @@
 
   .scan-card, .input-card { background: var(--card); border-radius: 18px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.05); }
   #qr-reader { width: 100%; border-radius: 12px; overflow: hidden; background: #f1f5f9; min-height: 280px; border: 2px dashed var(--border); }
+  
+  /* ✅ BARU: Memaksa tampilan video kamera menjadi mode cermin (mirror) */
+  #qr-reader video {
+    transform: scaleX(-1) !important; 
+  }
+
   .scanner-controls { display: flex; gap: 10px; margin-top: 12px; }
 
   .input-group { margin-bottom: 14px; }

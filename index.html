@@ -32,7 +32,6 @@
   .scan-card, .input-card { background: var(--card); border-radius: 18px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.05); }
   #qr-reader { width: 100%; border-radius: 12px; overflow: hidden; background: #f1f5f9; min-height: 280px; border: 2px dashed var(--border); }
   
-  /* ✅ Memaksa tampilan video kamera menjadi mode cermin (mirror) */
   #qr-reader video {
     transform: scaleX(-1) !important; 
   }
@@ -88,7 +87,6 @@
   .toast.success { border-color: var(--success); color: var(--success); }
   .toast.error { border-color: var(--primary); color: var(--primary); }
 
-  /* ✅ Loading Overlay Style */
   #loadingOverlay { 
     display: none; 
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -195,7 +193,6 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- ✅ Loading Overlay HTML -->
 <div id="loadingOverlay">
   <i class="fa-solid fa-circle-notch spinner"></i>
   <div class="loading-text">Memvalidasi data...</div>
@@ -214,37 +211,54 @@
 
   let dbKaryawan = [], html5QrCode = null, isScanning = false, currentFacingMode = "environment";
   let lastDecodedText = null, isProcessing = false, dashboardRefreshInterval = null, isDashboardLoading = false;
+  let audioCtx = null; // ✅ Audio context disimpan agar lebih efisien
 
-  // ✅ BARU: Fungsi untuk menghasilkan suara "Ding" (Beep Scanner) tanpa file eksternal
+  // ✅ BARU: Fungsi suara notifikasi mirip Facebook (lebih keras & khas)
   function playScanSound() {
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-      
-      const ctx = new AudioContext();
-      // Pastikan audio context aktif (browser kadang men-suspend audio sampai ada interaksi user)
-      if (ctx.state === 'suspended') {
-        ctx.resume();
+      // Inisialisasi AudioContext hanya sekali (lebih efisien)
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        audioCtx = new AudioContext();
       }
       
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
+      // Resume jika di-suspend oleh browser
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
       
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
+      const now = audioCtx.currentTime;
       
-      // Desain suara: Nada tinggi (880Hz) turun ke nada sedang (587Hz) seperti bunyi "OK"
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(880, ctx.currentTime); 
-      oscillator.frequency.exponentialRampToValueAtTime(587, ctx.currentTime + 0.15); 
+      // ===== Nada 1: "Pop" tinggi (khas notifikasi FB) =====
+      const osc1 = audioCtx.createOscillator();
+      const gain1 = audioCtx.createGain();
+      osc1.connect(gain1);
+      gain1.connect(audioCtx.destination);
+      osc1.type = 'sine';
+      // Frekuensi: 1200Hz → 800Hz (turun cepat, khas "pop")
+      osc1.frequency.setValueAtTime(1200, now);
+      osc1.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+      // Volume: 0.8 (80% - LEBIH KERAS dari sebelumnya 0.2)
+      gain1.gain.setValueAtTime(0.8, now);
+      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+      osc1.start(now);
+      osc1.stop(now + 0.15);
       
-      // Volume: Mulai dari 20% lalu fade out dengan cepat agar tidak berdengung
-      gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      // ===== Nada 2: "Ding" penutup (lebih lembut) =====
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.type = 'sine';
+      // Frekuensi: 900Hz → 600Hz
+      osc2.frequency.setValueAtTime(900, now + 0.05);
+      osc2.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+      gain2.gain.setValueAtTime(0.5, now + 0.05);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+      osc2.start(now + 0.05);
+      osc2.stop(now + 0.25);
       
-      // Putar dan hentikan setelah 0.25 detik
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.25);
     } catch (e) {
       console.warn("Audio play failed:", e);
     }
@@ -328,7 +342,7 @@
     stopScanner();
     showLoading(); 
     
-    // ✅ BARU: Mainkan suara "Ding" bersamaan dengan munculnya loading
+    // ✅ Mainkan suara "Pop" notifikasi FB
     playScanSound(); 
     
     autoRecord(decodedText);
@@ -392,7 +406,7 @@
     btn.disabled = true;
     
     showLoading(); 
-    playScanSound(); // ✅ Suara juga dimainkan saat input manual
+    playScanSound();
     await autoRecord(nikInput.value.trim());
     
     setTimeout(() => {

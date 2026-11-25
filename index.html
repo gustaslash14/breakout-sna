@@ -32,7 +32,7 @@
   .scan-card, .input-card { background: var(--card); border-radius: 18px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(220, 38, 38, 0.05); }
   #qr-reader { width: 100%; border-radius: 12px; overflow: hidden; background: #f1f5f9; min-height: 280px; border: 2px dashed var(--border); }
   
-  /* ✅ BARU: Memaksa tampilan video kamera menjadi mode cermin (mirror) */
+  /* ✅ Memaksa tampilan video kamera menjadi mode cermin (mirror) */
   #qr-reader video {
     transform: scaleX(-1) !important; 
   }
@@ -88,7 +88,7 @@
   .toast.success { border-color: var(--success); color: var(--success); }
   .toast.error { border-color: var(--primary); color: var(--primary); }
 
-  /* ✅ BARU: Loading Overlay Style */
+  /* ✅ Loading Overlay Style */
   #loadingOverlay { 
     display: none; 
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -195,7 +195,7 @@
 
 <div id="toast" class="toast"></div>
 
-<!-- ✅ BARU: Loading Overlay HTML -->
+<!-- ✅ Loading Overlay HTML -->
 <div id="loadingOverlay">
   <i class="fa-solid fa-circle-notch spinner"></i>
   <div class="loading-text">Memvalidasi data...</div>
@@ -215,7 +215,41 @@
   let dbKaryawan = [], html5QrCode = null, isScanning = false, currentFacingMode = "environment";
   let lastDecodedText = null, isProcessing = false, dashboardRefreshInterval = null, isDashboardLoading = false;
 
-  // ✅ BARU: Fungsi kontrol loading overlay
+  // ✅ BARU: Fungsi untuk menghasilkan suara "Ding" (Beep Scanner) tanpa file eksternal
+  function playScanSound() {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      
+      const ctx = new AudioContext();
+      // Pastikan audio context aktif (browser kadang men-suspend audio sampai ada interaksi user)
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      // Desain suara: Nada tinggi (880Hz) turun ke nada sedang (587Hz) seperti bunyi "OK"
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, ctx.currentTime); 
+      oscillator.frequency.exponentialRampToValueAtTime(587, ctx.currentTime + 0.15); 
+      
+      // Volume: Mulai dari 20% lalu fade out dengan cepat agar tidak berdengung
+      gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      
+      // Putar dan hentikan setelah 0.25 detik
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.25);
+    } catch (e) {
+      console.warn("Audio play failed:", e);
+    }
+  }
+
   function showLoading() {
     document.getElementById('loadingOverlay').style.display = 'flex';
   }
@@ -289,10 +323,14 @@
 
   function onScanSuccess(decodedText) {
     if (isProcessing) return;
-    isProcessing = true; // Set flag lebih awal
+    isProcessing = true; 
     lastDecodedText = null;
     stopScanner();
-    showLoading(); // ✅ TAMPILKAN LOADING SAAT QR TERDETEKSI
+    showLoading(); 
+    
+    // ✅ BARU: Mainkan suara "Ding" bersamaan dengan munculnya loading
+    playScanSound(); 
+    
     autoRecord(decodedText);
   }
 
@@ -322,7 +360,7 @@
       const response = await fetch(url);
       const result = await response.json();
       
-      hideLoading(); // ✅ SEMBUNYIKAN LOADING SETELAH RESPON SERVER DITERIMA
+      hideLoading(); 
       
       if (result.status === "success") {
         showSuccessOverlay(result.jenis, karyawan.nama, result.waktu);
@@ -330,7 +368,7 @@
         showToast(`❌ ${result.message}`, "error");
       }
     } catch (error) {
-      hideLoading(); // ✅ SEMBUNYIKAN LOADING JIKA ERROR
+      hideLoading(); 
       console.warn("Gagal koneksi ke server:", error);
       showToast("⚠️ Koneksi server gagal", "error");
     }
@@ -353,7 +391,8 @@
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
     btn.disabled = true;
     
-    showLoading(); // ✅ TAMPILKAN LOADING UNTUK MANUAL JUGA
+    showLoading(); 
+    playScanSound(); // ✅ Suara juga dimainkan saat input manual
     await autoRecord(nikInput.value.trim());
     
     setTimeout(() => {

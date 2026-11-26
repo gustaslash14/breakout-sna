@@ -209,58 +209,38 @@
   const API_KARYAWAN_URL = "https://www.snam110.dpdns.org/absen/api/karyawan";
   const API_LOG_URL = "https://script.google.com/macros/s/AKfycbxvZFo9oMw6SqP-W6mLiEVt92sHTxwnjPVmao_Jnje6-AbhiAE2qabM5e-YCPr84-1x/exec";
 
+  // ✅ BARU: URL file MP3 suara "OK" dari GitHub
+  const SCAN_SOUND_URL = "https://raw.githubusercontent.com/gustaslash14/breakout-sna/main/ok-sound.mp3";
+
   let dbKaryawan = [], html5QrCode = null, isScanning = false, currentFacingMode = "environment";
   let lastDecodedText = null, isProcessing = false, dashboardRefreshInterval = null, isDashboardLoading = false;
-  let audioCtx = null; // ✅ Audio context disimpan agar lebih efisien
+  let scanAudio = null; // ✅ BARU: Object untuk audio MP3
 
-  // ✅ BARU: Fungsi suara notifikasi mirip Facebook (lebih keras & khas)
+  // ✅ BARU: Preload audio MP3 saat halaman dimuat
+  function preloadAudio() {
+    scanAudio = new Audio(SCAN_SOUND_URL);
+    scanAudio.volume = 1.0; // Volume maksimal
+    scanAudio.preload = 'auto';
+    scanAudio.addEventListener('canplaythrough', function() {
+      console.log("✅ Audio 'OK' siap diputar");
+    });
+    scanAudio.addEventListener('error', function(e) {
+      console.error("❌ Gagal load audio MP3:", e);
+    });
+    // Trigger preload
+    scanAudio.load();
+  }
+
+  // ✅ BARU: Mainkan suara "OK" dari MP3
   function playScanSound() {
-    try {
-      // Inisialisasi AudioContext hanya sekali (lebih efisien)
-      if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContext) return;
-        audioCtx = new AudioContext();
+    if (scanAudio) {
+      scanAudio.currentTime = 0; // Reset ke awal agar bisa replay cepat
+      const playPromise = scanAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(e => {
+          console.warn("⚠️ Audio play failed (kemungkinan belum ada interaksi user):", e);
+        });
       }
-      
-      // Resume jika di-suspend oleh browser
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      
-      const now = audioCtx.currentTime;
-      
-      // ===== Nada 1: "Pop" tinggi (khas notifikasi FB) =====
-      const osc1 = audioCtx.createOscillator();
-      const gain1 = audioCtx.createGain();
-      osc1.connect(gain1);
-      gain1.connect(audioCtx.destination);
-      osc1.type = 'sine';
-      // Frekuensi: 1200Hz → 800Hz (turun cepat, khas "pop")
-      osc1.frequency.setValueAtTime(1200, now);
-      osc1.frequency.exponentialRampToValueAtTime(800, now + 0.08);
-      // Volume: 0.8 (80% - LEBIH KERAS dari sebelumnya 0.2)
-      gain1.gain.setValueAtTime(0.8, now);
-      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-      osc1.start(now);
-      osc1.stop(now + 0.15);
-      
-      // ===== Nada 2: "Ding" penutup (lebih lembut) =====
-      const osc2 = audioCtx.createOscillator();
-      const gain2 = audioCtx.createGain();
-      osc2.connect(gain2);
-      gain2.connect(audioCtx.destination);
-      osc2.type = 'sine';
-      // Frekuensi: 900Hz → 600Hz
-      osc2.frequency.setValueAtTime(900, now + 0.05);
-      osc2.frequency.exponentialRampToValueAtTime(600, now + 0.2);
-      gain2.gain.setValueAtTime(0.5, now + 0.05);
-      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-      osc2.start(now + 0.05);
-      osc2.stop(now + 0.25);
-      
-    } catch (e) {
-      console.warn("Audio play failed:", e);
     }
   }
 
@@ -342,7 +322,7 @@
     stopScanner();
     showLoading(); 
     
-    // ✅ Mainkan suara "Pop" notifikasi FB
+    // ✅ Mainkan suara "OK" dari MP3
     playScanSound(); 
     
     autoRecord(decodedText);
@@ -647,6 +627,7 @@
     const filterDate = document.getElementById('filterDate');
     if (filterDate) filterDate.value = today;
     
+    preloadAudio(); // ✅ BARU: Preload audio MP3 saat halaman dimuat
     loadKaryawanData();
     
     if (window.innerWidth >= 769) {
